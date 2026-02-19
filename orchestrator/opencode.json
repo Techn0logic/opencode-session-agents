@@ -7,11 +7,15 @@
     },
     "read": {
       "~/Projects/opencode-orchestration/*": "allow"
+    },
+    "asyncagents_task": {
+      "*": "allow"
     }
   },
   "agent": {
     "orchestrator": {
       "mode": "primary",
+      "model": "opencode/big-pickle",
       "description": "Pure delegation router - delegates all tasks to subagents",
       "tools": {
         "asyncagents_task": true,
@@ -24,12 +28,8 @@
         "edit": false,
         "bash": false,
         "asyncagents_output": true,
-        "asyncagents_cancel": false
-      },
-      "task": {
-        "*": "deny",
-        "agent_1": "auto",
-        "agent_2": "auto"
+        "asyncagents_cancel": false,
+        "task": true
       }
     }
   },
