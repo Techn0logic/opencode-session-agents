@@ -1,0 +1,37 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["better-opencode-async-agents"],
+  "permission": {
+    "list": {
+      "~/Projects/opencode-orchestration": "allow"
+    },
+    "read": {
+      "~/Projects/opencode-orchestration/*": "allow"
+    }
+  },
+  "agent": {
+    "orchestrator": {
+      "mode": "primary",
+      "description": "Pure delegation router - delegates all tasks to subagents",
+      "tools": {
+        "asyncagents_task": true,
+        "asyncagents_list": true,
+        "list": true,
+        "read": true,
+        "grep": false,
+        "glob": false,
+        "write": false,
+        "edit": false,
+        "bash": false,
+        "asyncagents_output": true,
+        "asyncagents_cancel": false
+      },
+      "task": {
+        "*": "deny",
+        "agent_1": "auto",
+        "agent_2": "auto"
+      }
+    }
+  },
+  "default_agent": "orchestrator"
+}
