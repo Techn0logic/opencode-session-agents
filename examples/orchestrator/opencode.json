@@ -1,0 +1,28 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "opencode-session-agents"
+  ],
+  "agent": {
+    "orchestrator": {
+      "mode": "primary",
+      "model": "opencode/big-pickle",
+      "description": "Pure delegation router - delegates all tasks to subagents",
+      "tools": {
+        "orchestrator_delegate": true,
+        "orchestrator_list_agents": true,
+        "orchestrator_status": true,
+        "orchestrator_tasks": true,
+        "orchestrator_cancel": true,
+        "list": true,
+        "read": true,
+        "grep": false,
+        "glob": false,
+        "write": false,
+        "edit": false,
+        "bash": false
+      }
+    }
+  },
+  "default_agent": "orchestrator"
+}

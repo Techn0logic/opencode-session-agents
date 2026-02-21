@@ -1,0 +1,1 @@
+I need two things done: 1) Create a landing page for a mobile game in index.html 2) Create a simple Express.js REST API with /api/users endpoint. Delegate each to the most suitable agent.

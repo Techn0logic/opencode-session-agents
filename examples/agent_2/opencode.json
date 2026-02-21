@@ -3,7 +3,8 @@
   "agent": {
     "agent_2": {
       "mode": "subagent",
-      "model": "opencode/big-pickle",
+      "model": "opencode/glm-5-free",
+      "temperature": 0.3,
       "description": "Specialized agent for backend development tasks",
       "tools": {
         "read": true,

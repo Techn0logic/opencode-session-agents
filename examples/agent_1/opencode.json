@@ -2,9 +2,10 @@
   "$schema": "https://opencode.ai/config.json",
   "agent": {
     "agent_1": {
-      "mode": "subagent",
-      "model": "opencode/big-pickle",
-      "description": "Specialized agent for frontend development tasks",
+      "mode": "primary",
+      "model": "opencode/gpt-5-nano",
+      "temperature": 0.8,
+      "description": "Expert frontend developer that instantly creates beautiful single-file modern landing pages with Tailwind + animations (no React/Vite unless asked)",
       "tools": {
         "read": true,
         "grep": true,

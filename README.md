@@ -1,184 +1,325 @@
-# OpenCode Multi-Agent Orchestration Demo
+# opencode-session-agents
 
-A demonstration of OpenCode's multi-agent system showing how to build an orchestrator pattern with specialized subagents for parallel, non-blocking task execution.
+[![npm version](https://img.shields.io/npm/v/opencode-session-agents)](https://www.npmjs.com/package/opencode-session-agents)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Overview
+Multi-agent orchestration plugin for OpenCode - enables spawning sub-agents with their own sessions, AGENT.md specs, and opencode.json configurations. Allows delegating to agents with their own configuration outside of the OpenCode project global.
 
-This project showcases OpenCode's built-in multi-agent capabilities with a router-orchestrator pattern:
+## Features
 
-- **Orchestrator**: A pure delegation router that spawns non-blocking child sessions
-- **Agent 1**: Specialized in frontend development tasks
-- **Agent 2**: Specialized in backend development tasks
+- **Spawn Sub-Agents**: Create isolated child sessions for each sub-agent
+- **Custom Agent Config**: Each sub-agent can have its own AGENT.md and opencode.json
+- **Session Management**: Monitor status and read output from delegated sessions
+- **Parallel Execution**: Delegate tasks without blocking the main session
+- **Auto-Discovery**: Automatically detects agent directories in your project
 
-The orchestrator session can spawn multiple specialized tasks in parallel that run independently, without blocking the main orchestrator session.
+## Installation
 
-## Project Structure
+### From npm
 
-```
-opencode-orchestration/
-├── orchestrator/
-│   ├── AGENT.md           # Orchestrator agent definition
-│   └── opencode.json      # Orchestrator configuration
-├── agent_1/
-│   ├── AGENT.md           # Frontend specialist agent
-│   └── opencode.json      # Agent 1 configuration
-├── agent_2/
-│   ├── AGENT.md           # Backend specialist agent
-│   └── opencode.json      # Agent 2 configuration
-└── README.md              # This file
+```bash
+opencode install opencode-session-agents
 ```
 
-## How It Works
-
-### Orchestrator Pattern
-
-The orchestrator agent (`orchestrator/AGENT.md`) is configured as a pure router with strict permissions:
-
-- ✅ Can delegate tasks using `asyncagents_task`
-- ✅ Can list and read agent definitions
-- ❌ Cannot write files, edit files, or run bash commands
-- 🔒 Delegates all actual work to subagents
-
-### Subagent Specialization
-
-**Agent 1** (Frontend Specialist):
-- Handles React, Vue, HTML, CSS, and other frontend tasks
-- Creates and modifies UI components
-- Writes and runs frontend tests
-
-**Agent 2** (Backend Specialist):
-- Handles API design, database, and server logic
-- Creates and modifies server-side components
-- Designs and optimizes database schemas
-
-### Non-Blocking Task Execution
-
-When the orchestrator receives a task:
-
-1. It lists available agents in the root directory
-2. Reads each agent's definition to determine capabilities
-3. Spawns non-blocking tasks using `asyncagents_task`
-4. Responds immediately to the user
-5. Subagents work in parallel in their own sessions
-
-### Session Navigation
-
-Jump between sessions using:
-- `Ctrl+Right` / `session_child_cycle` → next child session
-- `Ctrl+Left` / `session_child_cycle_reverse` → previous session
-
-## Getting Started
-
-### Prerequisites
-
-- [OpenCode CLI](https://opencode.ai) installed
-- Access to the OpenCode service
-
-### Usage
-
-1. **Start the orchestrator session**:
-   ```bash
-   cd orchestrator
-   opencode
-   ```
-
-2. **Send a task to the orchestrator**:
-   ```
-   Create a button component
-   ```
-
-3. **The orchestrator will automatically**:
-   - Discover available agents
-   - Delegate to the appropriate subagent
-   - Respond immediately that the task was delegated
-
-4. **Navigate to the subagent session**:
-   - Use `Ctrl+Right` to switch to the child session
-   - View the subagent working on the task
-
-5. **Check task status** (from orchestrator):
-   ```
-   List all running tasks
-   ```
-
-## Configuration
-
-### Orchestrator Permissions
-
-The orchestrator is configured with restricted permissions to enforce the router pattern:
+Then add to your `opencode.json`:
 
 ```json
 {
+  "plugin": ["opencode-session-agents"]
+}
+```
+
+### From Source (Local Development)
+
+```json
+{
+  "plugin": ["file:///path/to/opencode-session-agents"]
+}
+```
+
+## Tested Versions
+
+- **OpenCode**: Latest stable (v1.2.10)
+- **Plugin**: opencode-session-agents v1.0.0
+
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           ORCHESTRATION FLOW                                    │
+└─────────────────────────────────────────────────────────────────────────────────┘
+│   User Prompt                                                                   │
+│         │                                                                       │
+│         ▼                                                                       │
+│ ┌───────────────────┐                                                           │
+│ │   ORCHESTRATOR    │  • Receives high-level task                               │
+│ │   (Main Session)  │  • Analyzes task requirements                             │
+│ │                   │  • Delegates to suitable sub-agent                        │
+│ └─────────┬─────────┘                                                           │
+│           │                                                                     │
+│           │ orchestrator_delegate                                               │
+│           │                                                                     │
+│           ▼                                                                     │
+│ ┌─────────────────────────────────────────────────────────────────────────────┐ │ 
+│ │                      PLUGIN: SPAWN SUB-AGENT                                │ │
+│ │  1. Create dedicated CHILD SESSION for sub-agent                            │ │
+│ │  2. Inject sub-agent's AGENT.md as context                                  │ │
+│ │  3. Apply sub-agent's opencode.json (model, tools, permissions)             │ │
+│ │  4. Execute task in sub-agent's dedicated working directory                 │ │
+│ └─────────────────────────────────────────────────────────────────────────────┘ │
+│           │                                                                     │
+│           ▼                                                                     │
+│ ┌───────────────────┐    ┌───────────────────┐                                  │
+│ │      AGENT_1      │    │      AGENT_2      │                                  │
+│ │  (Child Session)  │    │  (Child Session)  │                                  │
+│ │                   │    │                   │                                  │
+│ │ Working Dir:      │    │ Working Dir:      │                                  │
+│ │  agent_1/         │    │  agent_2/         │                                  │
+│ │                   │    │                   │                                  │
+│ │ Model: (custom)   │    │ Model: (custom)   │                                  │
+│ │ Tools: (custom)   │    │ Tools: (custom)   │                                  │
+│ └─────────┬─────────┘    └─────────┬─────────┘                                  │
+│           │                        │                                            │
+│           ▼                        ▼                                            │
+│     [Parallel Execution in Dedicated Sessions]                                  │
+│           │                        │                                            │
+│           ▼                        ▼                                            │   
+│     Results available via orchestrator_status                                   │
+│           │                                                                     │
+│           ▼                                                                     │
+│     Main session can monitor or read output                                     │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Expected Behavior
+
+- **Delegation Flow**: The orchestrator analyzes incoming tasks and uses `orchestrator_delegate` to spawn a child session for the most suitable sub-agent
+- **Dedicated Sessions**: Each sub-agent runs in its own isolated session - parallel execution is supported
+- **Individual Sub-Agent Config**: Each delegated task inherits the sub-agent's `opencode.json` (custom model, tool permissions, etc.) and operates in the sub-agent's working directory
+- **Context Injection**: The sub-agent's `AGENT.md` is automatically injected as initial context, defining the agent's role and capabilities
+- **Non-Blocking**: Delegation is non-blocking - the main session remains responsive while sub-agents work in parallel
+
+### What Happens When You Delegate
+
+1. **Discovery**: Scans project for directories with AGENT.md or opencode.json
+2. **Delegation**: Creates a new child session for the sub-agent
+3. **Context Injection**: Injects the agent's AGENT.md as initial context
+4. **Config Application**: Applies sub-agent's opencode.json (custom model, tools, permissions)
+5. **Execution**: Sends the task prompt to the child session
+6. **Monitoring**: Returns session ID for status/output checking
+
+The orchestrator remains responsive while sub-agents work in parallel.
+
+## Example
+```
+┌───────────────────────────────────────────────────────
+│opencode-session-agents/examples/orchestrator
+└─> opencode run "$(cat prompt_agent_1.txt)"
+
+> orchestrator · big-pickle
+
+⚙ orchestrator_list_agents Unknown
+→ Read ../agent_1/AGENT.md
+→ Read ../agent_2/AGENT.md
+
+Agent 1 is clearly the most suitable - it's a specialized frontend development assistant that handles HTML, CSS, Tailwind, and creates modern landing pages. Let me delegate the task.
+
+[orchestrator_delegate] agent=agent_1 agentPath=/home/johnny/Projects/opencode-session-agents/examples/agent_1
+[orchestrator_delegate] modelStr=opencode/gpt-5-nano modelOverride={"providerID":"opencode","modelID":"gpt-5-nano"}
+[orchestrator_delegate] toolsOverride={"read":true,"grep":true,"glob":true,"write":true,"edit":true,"bash":true}
+⚙ orchestrator_delegate {"agent":"agent_1","task":"Create a modern looking landing page index.html advertising a generic mobile game. Use Tailwind CDN, glassmorphism, gradients, animations, and a dark game aesthetic with vibrant neon accents. Make it fully responsive with phone mockups and floating/hover animations."}
+
+Delegated to **agent_1** (frontend specialist) - it's executing in its directory. Let me check on progress:
+
+⚙ orchestrator_status {"sessionId":"ses_37ef6ffdcfferrprrOJqsbALwU"}
+⚙ orchestrator_read_output {"lastN":5,"sessionId":"ses_37ef6ffdcfferrprrOJqsbALwU"}
+⚙ orchestrator_status {"sessionId":"ses_37ef6ffdcfferrprrOJqsbALwU"}
+→ Read ../agent_1/index.html
+
+Done! **agent_1** (frontend specialist) created a modern landing page at `/home/johnny/Projects/opencode-session-agents/examples/agent_1/index.html`.
+
+The page features:
+- Dark space theme with cyan/teal neon accents
+- Glassmorphism header with sticky navigation
+- Hero section with gradient background and SVG planet art
+- App Store & Google Play download buttons
+- Features section with 4 cards
+- Screenshot gallery (placeholder blocks)
+- Fully responsive (mobile/tablet/desktop)
+
+The file is self-contained with no external dependencies (uses inline CSS).
+```
+
+## Quick Start
+
+1. **Create Agent Directories**: Add sub-agent folders with AGENT.md files
+
+```
+my-project/
+├── agent_frontend/
+│   ├── AGENT.md        # Agent role and capabilities
+│   └── opencode.json   # (optional) agent-specific config
+├── agent_backend/
+│   ├── AGENT.md
+│   └── opencode.json
+└── opencode.json
+```
+
+2. **Agent AGENT.md Example**:
+
+```markdown
+---
+mode: subagent
+---
+
+# Frontend Specialist
+
+You are a frontend development expert. You specialize in:
+- React, Vue, and modern JavaScript frameworks
+- CSS, Tailwind, and styling solutions
+- Component architecture and design systems
+```
+
+3. **Delegate Tasks**: Use the orchestrator tools to delegate work
+
+```
+Create a login form component in React with validation
+```
+
+## Tools Reference
+
+### orchestrator_list_agents
+
+List all available sub-agents in the project.
+
+**Arguments**: None
+
+**Returns**: Array of agent objects with name, path, description, and model
+
+```json
+[
+  {
+    "name": "agent_frontend",
+    "path": "/path/to/project/agent_frontend",
+    "description": "Frontend specialist agent",
+    "model": "anthropic/claude-sonnet-4-20250514"
+  }
+]
+```
+
+### orchestrator_delegate
+
+Delegate a task to a sub-agent. Creates a child session and executes the task.
+
+**Arguments**:
+- `agent` (string, required): Sub-agent directory name
+- `task` (string, required): Task prompt to execute
+
+**Returns**: Session info with status
+
+```json
+{
+  "sessionId": "sess_abc123",
+  "agent": "agent_frontend",
+  "directory": "/path/to/project/agent_frontend",
+  "status": "delegated",
+  "note": "Task is executing in background..."
+}
+```
+
+### orchestrator_status
+
+Get the status of a delegated child session.
+
+**Arguments**:
+- `sessionId` (string, required): Child session ID from delegation
+
+**Returns**: Session status and message count
+
+```json
+{
+  "id": "sess_abc123",
+  "title": "agent_frontend - Create login form...",
+  "status": "running",
+  "messageCount": 5,
+  "lastMessage": { ... }
+}
+```
+
+### orchestrator_read_output
+
+Read the last N messages from a child session.
+
+**Arguments**:
+- `sessionId` (string, required): Child session ID
+- `lastN` (number, optional): Number of messages (1-50, default: 10)
+
+**Returns**: Array of messages with role and content
+
+## Configuration
+
+### Agent Directory Structure
+
+Each sub-agent directory can contain:
+
+- `AGENT.md` (required): Agent role definition with `mode: subagent`
+- `opencode.json` (optional): Agent-specific configuration
+
+```
+agent_example/
+├── AGENT.md         # Required: agent role/spec
+└── opencode.json    # Optional: model, permissions, etc.
+```
+
+### opencode.json Agent Config
+
+```json
+{
+  "description": "Frontend specialist",
+  "model": "opencode/big-pickle",
   "tools": {
-    "asyncagents_task": true,
-    "asyncagents_list": true,
-    "asyncagents_output": true,
-    "asyncagents_cancel": true,
-    "list": true,
-    "read": true,
-    "write": false,
-    "edit": false,
-    "bash": false
-  },
-  "task": {
-    "*": "deny",
-    "agent_1": "auto",
-    "agent_2": "auto"
+    "write": true,
+    "edit": true,
+    "bash": true
   }
 }
 ```
 
-### Adding New Agents
+### Permissions
 
-To add a new specialized agent:
+The orchestrator typically needs read permissions to discover and delegate:
 
-1. Create a new directory (e.g., `agent_3/`)
-2. Add `AGENT.md` with mode: `subagent`
-3. Add `opencode.json` with agent configuration
-4. Add the agent to the orchestrator's task permissions:
-   ```json
-   "task": {
-     "*": "deny",
-     "agent_1": "auto",
-     "agent_2": "auto",
-     "agent_3": "auto"
-   }
-   ```
-
-## Key Features
-
-- **Parallel Execution**: Multiple subagents can work simultaneously
-- **Non-Blocking**: Orchestrator remains responsive while subagents work
-- **Specialization**: Each agent focuses on specific domains
-- **Fire-and-Forget**: Delegate tasks and continue working
-- **Task Management**: List, monitor, and cancel running tasks
-- **Session Navigation**: Easy switching between orchestrator and subagents
-
-## Advanced Usage
-
-### Better Async Agents Plugin
-
-This project uses the `better-opencode-async-agents` plugin for enhanced async agent capabilities. Install with:
-
-```bash
-opencode install better-opencode-async-agents
+```json
+{
+  "tools": {
+    "orchestrator_list_agents": true,
+    "orchestrator_delegate": true,
+    "orchestrator_status": true,
+    "orchestrator_read_output": true,
+    "read": true
+  }
+}
 ```
 
-### Other Orchestrator Plugins
+## Known Limitations
 
-For advanced features like work-stealing queues, session pooling, or automatic coordination, consider:
+- **Permissions Not Fully Applied**: Only `model` and `tools` from sub-agent's `opencode.json` are applied via the session prompt. Session-level permissions (edit, bash, webfetch) from the `permission` field are not currently enforced and must be granted in the parent session's configuration.
+
+  **Reference**: [GitHub Issue #6396](https://github.com/anomalyco/opencode/issues/6396) - Discusses how session-specific directories and configs work.
+
+## Development
 
 ```bash
-opencode install opencode-orchestrator
-# or
-opencode install oh-my-opencode
+# Install dependencies
+bun install
+
+# Type check
+bun run typecheck
+
+# Build
+bun run build
 ```
 
 ## License
 
-This is a demonstration project for OpenCode's multi-agent system.
-
-## Resources
-
-- [OpenCode Documentation](https://opencode.ai)
-- [OpenCode GitHub Issues](https://github.com/anomalyco/opencode/issues)
+MIT

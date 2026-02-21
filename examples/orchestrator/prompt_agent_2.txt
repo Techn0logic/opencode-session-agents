@@ -1,0 +1,1 @@
+Delegate this task to most suitable agent. Task: create a simple REST API with Express.js that has /api/users endpoint with GET/POST methods, use in-memory array for storage
