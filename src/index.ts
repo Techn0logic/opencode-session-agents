@@ -1,7 +1,7 @@
 import type { Plugin } from "@opencode-ai/plugin"
 import { tool } from "@opencode-ai/plugin"
 import { readdir, readFile, access } from "fs/promises"
-import { join } from "path"
+import { join, resolve } from "path"
 
 interface AgentInfo {
   name: string
@@ -49,50 +49,15 @@ async function fileExists(p: string): Promise<boolean> {
   return access(p).then(() => true).catch(() => false)
 }
 
+/**
+ * Detects the agent root directory.
+ *
+ * Returns parent of CWD (one level only), no further traversal.
+ *
+ * @returns The parent of CWD as the agent root directory
+ */
 async function detectAgentRoot(): Promise<string> {
-  const currentDir = process.cwd()
-
-  try {
-    const entries = await readdir(currentDir, { withFileTypes: true })
-    let hasAgents = false
-
-    for (const e of entries) {
-      if (!e.isDirectory()) continue
-      if (e.name.startsWith("agent_")) {
-        hasAgents = true
-        break
-      }
-      const agentPath = join(currentDir, e.name)
-      if (
-        (await fileExists(join(agentPath, "AGENT.md"))) ||
-        (await fileExists(join(agentPath, "opencode.json")))
-      ) {
-        hasAgents = true
-        break
-      }
-    }
-
-    if (hasAgents) return currentDir
-
-    const parentDir = join(currentDir, "..")
-    const parentEntries = await readdir(parentDir, { withFileTypes: true })
-
-    for (const e of parentEntries) {
-      if (!e.isDirectory()) continue
-      if (e.name.startsWith("agent_")) return parentDir
-      const agentPath = join(parentDir, e.name)
-      if (
-        (await fileExists(join(agentPath, "AGENT.md"))) ||
-        (await fileExists(join(agentPath, "opencode.json")))
-      ) {
-        return parentDir
-      }
-    }
-
-    return currentDir
-  } catch {
-    return currentDir
-  }
+  return resolve(process.cwd(), "..")
 }
 
 async function readAgentMd(agentPath: string): Promise<string | null> {
@@ -117,7 +82,7 @@ export const SessionAgentsPlugin: Plugin = async ({ client }) => {
        * Scans for directories containing AGENT.md or opencode.json.
        */
       orchestrator_list_agents: tool({
-        description: "List available sub-agents (directories containing AGENT.md or opencode.json)",
+        description: "List available sub-agents (directories containing AGENT.md or opencode.json) within parent directory",
         args: {},
         async execute(_args): Promise<string> {
           const entries = await readdir(projectRoot, { withFileTypes: true })
@@ -159,7 +124,7 @@ export const SessionAgentsPlugin: Plugin = async ({ client }) => {
             .describe("Sub-agent directory name e.g. agent_1, backend, frontend"),
           task: tool.schema.string().describe("Full task prompt to execute"),
         },
-        async execute(args): Promise<string> {
+          async execute(args): Promise<string> {
           try {
             const { agent, task } = args
             const agentPath = join(projectRoot, agent)
