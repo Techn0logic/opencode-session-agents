@@ -13,6 +13,10 @@ Multi-agent orchestration plugin for OpenCode - enables spawning sub-agents with
 - **Parallel Execution**: Delegate tasks without blocking the main session
 - **Auto-Discovery**: Automatically detects agent directories in your project
 
+## Note 
+⚠️ Third-Party Plugin
+This plugin is an independent community project and is not affiliated with, maintained by, or officially supported by the *OpenCode* team.
+
 ## Installation
 
 ### From npm
