@@ -1,6 +1,6 @@
 {
   "name": "opencode-session-agents",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Multi-agent orchestration plugin for OpenCode - enables spawning sub-agents with their own sessions, AGENT.md specs, and opencode.json configurations. Allows delegating to agents with their own configuration outside of the OpenCode project global.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

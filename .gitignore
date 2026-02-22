@@ -5,5 +5,10 @@ dist/
 .env
 .env.local
 *.tgz
+*.tgz
 .vscode/
-.opencode/
+package-lock.json
+opencode-session-agents/
+
+# OpenCode local files
+.opencode

@@ -40,7 +40,7 @@ Then add to your `opencode.json`:
 ## Tested Versions
 
 - **OpenCode**: Latest stable (v1.2.10)
-- **Plugin**: opencode-session-agents v1.0.0
+- **Plugin**: opencode-session-agents v1.0.1
 
 ## How It Works
 
@@ -255,6 +255,31 @@ Read the last N messages from a child session.
 - `lastN` (number, optional): Number of messages (1-50, default: 10)
 
 **Returns**: Array of messages with role and content
+
+## Agent Discovery
+
+The orchestrator discovers agents in the parent directory of the current working directory (one level up only). No agents outside that parent directory will be discovered or accessible.
+
+**Example Structure**:
+```
+examples/
+├── orchestrator/     <- Run from here
+├── agent_1/          <- Discoverable (in parent)
+└── agent_2/          <- Discoverable (in parent)
+```
+
+**Usage**:
+```bash
+# Run from examples/orchestrator/ to discover agents in examples/
+cd examples/orchestrator/
+opencode run "list available agents"
+# Result: Lists agent_1, agent_2, orchestrator (if it has opencode.json)
+
+# Agents outside examples/ are NOT discoverable
+# No agents in /home/user/ or project root are accessible
+```
+
+**Note**: This limits discovery and delegation to agents within the immediate parent directory of CWD.
 
 ## Configuration
 
