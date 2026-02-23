@@ -49,17 +49,6 @@ async function fileExists(p: string): Promise<boolean> {
   return access(p).then(() => true).catch(() => false)
 }
 
-/**
- * Detects the agent root directory.
- *
- * Returns parent of CWD (one level only), no further traversal.
- *
- * @returns The parent of CWD as the agent root directory
- */
-async function detectAgentRoot(): Promise<string> {
-  return resolve(process.cwd(), "..")
-}
-
 async function readAgentMd(agentPath: string): Promise<string | null> {
   const p = join(agentPath, "AGENT.md")
   if (!(await fileExists(p))) return null
@@ -72,9 +61,14 @@ async function readAgentConfig(agentPath: string): Promise<Record<string, unknow
   return JSON.parse(await readFile(p, "utf8"))
 }
 
-export const SessionAgentsPlugin: Plugin = async ({ client }) => {
-  const projectRoot = await detectAgentRoot()
+function extractDescriptionFromAgentMd(content: string): string {
+  const trimmed = content.trim()
+  const firstParagraph = trimmed.split(/\n\n+/)[0]
+  const cleaned = firstParagraph.replace(/^#+\s*/, "").replace(/\s+/g, " ").trim()
+  return cleaned.length > 200 ? cleaned.slice(0, 200) + "..." : cleaned
+}
 
+export const SessionAgentsPlugin: Plugin = async ({ client }) => {
   return {
     tool: {
       /**
@@ -84,23 +78,35 @@ export const SessionAgentsPlugin: Plugin = async ({ client }) => {
       orchestrator_list_agents: tool({
         description: "List available sub-agents (directories containing AGENT.md or opencode.json) within parent directory",
         args: {},
-        async execute(_args): Promise<string> {
-          const entries = await readdir(projectRoot, { withFileTypes: true })
+        async execute(_args, context): Promise<string> {
+          const discoveryRoot = resolve(context.directory, "..")
+          const entries = await readdir(discoveryRoot, { withFileTypes: true })
           const agents: AgentInfo[] = []
 
           for (const e of entries) {
             if (!e.isDirectory()) continue
-            const agentPath = join(projectRoot, e.name)
+            const agentPath = join(discoveryRoot, e.name)
             const hasMd = await fileExists(join(agentPath, "AGENT.md"))
             const hasCfg = await fileExists(join(agentPath, "opencode.json"))
             if (!hasMd && !hasCfg) continue
 
             const cfg = hasCfg ? await readAgentConfig(agentPath) : null
+            const agentConfigTyped = cfg as AgentConfig | null
+            const agentSpecificConfig = agentConfigTyped?.agent?.[e.name]
+            
+            let description = (agentSpecificConfig?.description as string) ?? (agentConfigTyped?.description as string) ?? null
+            if (!description && hasMd) {
+              const agentMd = await readAgentMd(agentPath)
+              if (agentMd) {
+                description = extractDescriptionFromAgentMd(agentMd)
+              }
+            }
+            
             agents.push({
               name: e.name,
               path: agentPath,
-              description: (cfg?.description as string) ?? "No description",
-              model: (cfg?.model as string) ?? "inherits root default",
+              description: description ?? "No description",
+              model: (agentSpecificConfig?.model as string) ?? (agentConfigTyped?.model as string) ?? "inherits root default",
             })
           }
 
@@ -124,10 +130,11 @@ export const SessionAgentsPlugin: Plugin = async ({ client }) => {
             .describe("Sub-agent directory name e.g. agent_1, backend, frontend"),
           task: tool.schema.string().describe("Full task prompt to execute"),
         },
-          async execute(args): Promise<string> {
+          async execute(args, context): Promise<string> {
           try {
             const { agent, task } = args
-            const agentPath = join(projectRoot, agent)
+            const discoveryRoot = resolve(context.directory, "..")
+            const agentPath = join(discoveryRoot, agent)
 
             if (!(await fileExists(agentPath))) {
               return JSON.stringify({ error: `Agent directory not found at ${agentPath}` })
